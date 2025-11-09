@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
@@ -86,12 +87,12 @@ public static class Extensions
         app.MapHealthChecks("/health", new HealthCheckOptions
         {
             ResponseWriter = WriteDetailedHealthResponse
-        });
+        }).AllowAnonymous();
 
         app.MapHealthChecks("/alive", new HealthCheckOptions
         {
             Predicate = _ => false
-        });
+        }).AllowAnonymous();
 
         return app;
     }
