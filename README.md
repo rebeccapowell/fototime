@@ -349,9 +349,24 @@ You should see a `9.0.x` version number in the output.
 **Details:**
 
 * Stream uploads; store originals + sizes; EXIF strip; compute hash for dedupe.
+* Storage targets:
+  * Provision blob storage through the Aspire Azure Storage hosting extension: `var storage = builder.AddAzureStorage("storage").RunAsEmulator(azurite => { azurite.WithLifetime(ContainerLifetime.Persistent); });` so local dev uses Azurite with a persistent volume.
+  * Aspire dev profile maps originals to `~/.aspire/storage/fototime` through the emulator-backed mount, matching production layout.
+  * Production originals land in the `fototime-originals` blob container; thumbnails live in the `fototime-thumbnails` container.
+  * Blob naming: originals use `{memberId}/{weeklyTopicId}/{photoId}.orig`; derived assets append the rendition tag (e.g., `{photoId}.thumb-lg`).
+* Upload flow issues one-time SAS tokens from the backend for the front-end uploader; tokens expire immediately after use and limit scope to the pending blob.
 * Background resize (sync in dev).
+* Thumbnail matrix:
+  * `thumb-sm` (256×256, jpeg)
+  * `thumb-md` (512×512, jpeg)
+  * `thumb-lg` (1024×1024, webp)
+  * Thumbnails generated via ImageSharp running inside the hosted background worker (`src/Infrastructure/Workers/ThumbnailWorker`).
 * Content safety flag (manual toggle now).
-  **Acceptance:** Upload works; thumbnails render; large images performant.
+  **Acceptance:**
+  * Upload works; thumbnails render; large images performant.
+  * Automated EXIF stripping verification covers sample uploads.
+  * Dedupe hashing unit + integration tests reject duplicates.
+  * Background worker maintains <250 ms average processing per thumbnail batch (p95 <500 ms) under load test.
   **Depends:** T11
 
 ---
