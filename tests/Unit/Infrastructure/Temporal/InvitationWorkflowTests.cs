@@ -23,9 +23,9 @@ public class InvitationWorkflowTests
         await using var environmentLifetime = environment;
         var activities = new RecordingInvitationActivities();
         var taskQueue = $"invitation-workflow-tests-{Guid.NewGuid():N}";
+        var options = CreateWorkerOptions(activities, taskQueue);
 
-        using var worker = CreateWorker(environment, taskQueue, activities);
-
+        using var worker = new TemporalWorker(environment.Client, options);
         var cancellationToken = TestContext.Current?.CancellationToken ?? CancellationToken.None;
 
         await worker.ExecuteAsync(async () =>
@@ -43,9 +43,9 @@ public class InvitationWorkflowTests
                 (IInvitationWorkflow wf) => wf.RunAsync(request),
                 new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
 
-            await environment.DelayAsync(TimeSpan.FromDays(2));
-            await WaitForConditionAsync(() => activities.Reminders.Count == 1);
-            Assert.Empty(activities.Expirations);
+            var reminderAt = request.ExpiresAt - TimeSpan.FromDays(1);
+
+            await environment.DelayAsync(reminderAt - issuedAt + TimeSpan.FromSeconds(1));
 
             var reminder = Assert.Single(activities.Reminders);
             Assert.Equal(request.InviteId, reminder.InviteId);
@@ -54,8 +54,9 @@ public class InvitationWorkflowTests
             Assert.Equal(request.IssuedAt, reminder.IssuedAt);
             Assert.Equal(request.Email, reminder.Email);
 
-            await environment.DelayAsync(TimeSpan.FromDays(1));
-            await WaitForConditionAsync(() => activities.Expirations.Count == 1);
+            Assert.Empty(activities.Expirations);
+
+            await environment.DelayAsync(request.ExpiresAt - reminderAt + TimeSpan.FromSeconds(1));
 
             var expiration = Assert.Single(activities.Expirations);
             Assert.Equal(request.GroupId, expiration.GroupId);
@@ -78,9 +79,9 @@ public class InvitationWorkflowTests
         await using var environmentLifetime = environment;
         var activities = new RecordingInvitationActivities();
         var taskQueue = $"invitation-workflow-tests-{Guid.NewGuid():N}";
+        var options = CreateWorkerOptions(activities, taskQueue);
 
-        using var worker = CreateWorker(environment, taskQueue, activities);
-
+        using var worker = new TemporalWorker(environment.Client, options);
         var cancellationToken = TestContext.Current?.CancellationToken ?? CancellationToken.None;
 
         await worker.ExecuteAsync(async () =>
@@ -98,13 +99,13 @@ public class InvitationWorkflowTests
                 (IInvitationWorkflow wf) => wf.RunAsync(request),
                 new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
 
-            await environment.DelayAsync(TimeSpan.FromDays(2));
-            await WaitForConditionAsync(() => activities.Expirations.Count == 1);
+            await environment.DelayAsync(request.ExpiresAt - issuedAt + TimeSpan.FromSeconds(1));
 
             Assert.Empty(activities.Reminders);
+
             var expiration = Assert.Single(activities.Expirations);
             Assert.Equal(request.InviteId, expiration.InviteId);
-            Assert.True(expiration.ExpiredAt >= request.ExpiresAt);
+            Assert.Equal(request.ExpiresAt, expiration.ExpiredAt);
 
             await handle.GetResultAsync();
         }, cancellationToken);
@@ -131,29 +132,9 @@ public class InvitationWorkflowTests
 
     private sealed record ExpiredInvite(Guid GroupId, Guid InviteId, DateTimeOffset ExpiredAt);
 
-    private static async Task WaitForConditionAsync(Func<bool> condition, TimeSpan? timeout = null, TimeSpan? pollInterval = null)
-    {
-        var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(5);
-        var interval = pollInterval ?? TimeSpan.FromMilliseconds(50);
-        var start = DateTime.UtcNow;
-
-        while (DateTime.UtcNow - start < effectiveTimeout)
-        {
-            if (condition())
-            {
-                return;
-            }
-
-            await Task.Delay(interval);
-        }
-
-        throw new TimeoutException("Timed out waiting for condition to be satisfied.");
-    }
-
-    private static TemporalWorker CreateWorker(
-        WorkflowEnvironment environment,
-        string taskQueue,
-        RecordingInvitationActivities activities)
+    private static TemporalWorkerOptions CreateWorkerOptions(
+        IInvitationActivities activities,
+        string taskQueue)
     {
         var options = new TemporalWorkerOptions(taskQueue)
             .AddWorkflow<InvitationWorkflow>();
@@ -163,7 +144,7 @@ public class InvitationWorkflowTests
             options = options.AddActivity(definition);
         }
 
-        return new TemporalWorker(environment.Client, options);
+        return options;
     }
 
     private static async Task<WorkflowEnvironment?> TryStartTimeSkippingAsync()
