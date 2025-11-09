@@ -213,9 +213,40 @@ You should see a `9.0.x` version number in the output.
 
 * Command: `SendInviteCommand` (Application), Domain create `Invite`.
 * Email via dev Mailpit.
+  * Wire Mailpit through Aspire by registering a container in `src/AppHost/Program.cs`:
+
+    ```csharp
+    var mailpit = builder.AddContainer("mailpit", "axllent/mailpit:latest", configure: container =>
+    {
+        container.WithEndpoint("smtp", 1025, 1025);
+        container.WithEndpoint("http", 8025, 8025);
+    });
+
+    builder.AddProject<Projects.Web>("web")
+        .WithReference(mailpit)
+        .WithEnvironment("Mail__Host", mailpit.GetEndpoint("smtp").AsHostAndPort())
+        .WithEnvironment("Mail__HttpBase", mailpit.GetEndpoint("http").UriString);
+    ```
+
+  * Integration tests confirm delivery by querying the Mailpit HTTP API (`GET /api/v1/messages`) via the Aspire-provided HTTP endpoint (for example `http://localhost:8025/api/v1/messages`). Use this API to assert that an invite email was enqueued before proceeding with acceptance steps.
+  * Local contributors can reproduce the setup by running `dotnet run --project src/AppHost/AppHost.csproj` and, in another terminal, invoking `curl http://localhost:8025/api/v1/messages` to inspect captured messages.
 * Temporal workflow: send, reminder, expiry.
+  * Implement workflow reminders and expiry handling using Temporal time skipping inside the .NET Testing Suite. Follow the official guidance at [Temporal .NET Testing Suite](https://docs.temporal.io/develop/dotnet/testing-suite) and exercise `TimeSkippingWorkflowEnvironment.RunAsync` (or equivalent) so automated tests advance virtual time to trigger reminder and expiry timers deterministically.
+  * Provide contributors with a regression test example similar to:
+
+    ```csharp
+    await using var env = await TimeSkippingWorkflowEnvironment.StartAsync();
+    var client = env.Client;
+    var workflow = await client.StartWorkflowAsync(new InvitationWorkflow(input), options);
+    await env.Client.WorkflowService.ForceTimeSkippingAsync();
+    await env.SleepAsync(TimeSpan.FromDays(3)); // triggers reminder
+    await env.SleepAsync(TimeSpan.FromDays(4)); // triggers expiry
+    ```
 * Accept invite: creates user membership, prompts profile creation + password (if local) or OIDC link.
-  **Acceptance:** End-to-end flow works via UI + HTMX; audit trail saved.
+  **Acceptance:**
+  - End-to-end flow works via UI + HTMX; audit trail saved.
+  - Integration tests verify invite email delivery by asserting the Mailpit API returns the expected message payload.
+  - Temporal workflow tests pass using time skipping to cover reminder and expiry paths.
   **Depends:** T03, T04, T05
 
 ---
