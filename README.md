@@ -175,7 +175,11 @@ You should see a `9.0.x` version number in the output.
 * Entities: `Group`, `Membership`, `Profile`, `Invite`, `Challenge`, `WeeklyTopic`, `Photo`, `Like`, `Comment`, `SideQuest`, `EventItem`, `Vote`.
 * Value objects: `DisplayName`, `Slug`, `PhotoLimits`, `Period`, `ContentSafetyTag`.
 * Domain events: `InviteSent`, `TopicStarted`, `PhotosSubmitted`, `VotingClosed`.
-  **Acceptance:** Compiles; unit tests for invariants.
+* Domain entities and value objects stay persistence-agnostic: no EF Core attributes or types (`[Key]`, `DbSet`, `EntityTypeConfiguration`, etc.); map persistence concerns in `src/Infrastructure`, and keep Domain references limited to BCL or other domain types.
+  **Acceptance:**
+  - Compiles with the Domain project referencing only BCL or other domain types.
+  - Domain project has no package references to EF Core or other infrastructure libraries.
+  - Unit tests cover domain behaviors and invariants without touching the database.
   **Depends:** T02
 
 ---
