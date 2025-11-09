@@ -4,14 +4,14 @@ namespace Infrastructure.Temporal.Activities;
 
 public interface IPingActivity
 {
-    Task<string> PingAsync();
+    Task<DateTime> PingAsync();
 }
 
 public class PingActivity : IPingActivity
 {
     [Activity]
-    public async Task<string> PingAsync()
+    public Task<DateTime> PingAsync()
     {
-        return await Task.FromResult("Pong @ " + DateTime.UtcNow);
+        return Task.FromResult(DateTime.UtcNow);
     }
 }
