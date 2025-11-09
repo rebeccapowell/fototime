@@ -42,8 +42,8 @@ app.MapGet("/ping", async (ITemporalClient client) =>
             new() { TaskQueue = "default", Id = $"ping-{Guid.NewGuid()}" }
         );
 
-        var result = await workflow.GetResultAsync();
-        return Results.Ok(result);
+        var timestamp = await workflow.GetResultAsync();
+        return Results.Ok(new PingResponse(timestamp));
     }
     catch (Exception ex)
     {
@@ -53,6 +53,6 @@ app.MapGet("/ping", async (ITemporalClient client) =>
 
 app.MapGet("/", () => "Hello World!");
 
-app.MapDefaultEndpoints();
-
 app.Run();
+
+internal sealed record PingResponse(DateTime Timestamp);
