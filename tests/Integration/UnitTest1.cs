@@ -63,7 +63,9 @@ public class E2EIntegrationTest
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        Assert.Contains("postgres", content.ToLower());
-        Assert.Contains("healthy", content.ToLower());
+        var normalized = content.ToLowerInvariant();
+        Assert.Contains("postgres", normalized);
+        Assert.Contains("temporal", normalized);
+        Assert.Contains("healthy", normalized);
     }
 }
