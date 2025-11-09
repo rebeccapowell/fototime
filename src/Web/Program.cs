@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using System.Security.Claims;
 using Infrastructure;
+using Infrastructure.Invitations;
 using Infrastructure.Temporal;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -38,6 +39,36 @@ var temporalAddress = builder.Configuration["Services:temporal:tcp"] ??
     throw new InvalidOperationException("Temporal address not found.");
 
 builder.Services.AddInfrastructureServices(connectionString, temporalAddress);
+
+var mailpitConnectionString = builder.Configuration.GetConnectionString("mailpit");
+
+if (!string.IsNullOrWhiteSpace(mailpitConnectionString)
+    && Uri.TryCreate(mailpitConnectionString, UriKind.Absolute, out var mailpitUri))
+{
+    builder.Services.PostConfigure<MailOptions>(options =>
+    {
+        if (!string.IsNullOrEmpty(mailpitUri.Host))
+        {
+            options.Host = mailpitUri.Host;
+        }
+
+        if (mailpitUri.Port > 0)
+        {
+            options.Port = mailpitUri.Port;
+        }
+
+        options.EnableSsl = string.Equals(mailpitUri.Scheme, "smtps", StringComparison.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrEmpty(mailpitUri.UserInfo))
+        {
+            var credentials = mailpitUri.UserInfo.Split(':', 2);
+            options.Username = Uri.UnescapeDataString(credentials[0]);
+            options.Password = credentials.Length > 1
+                ? Uri.UnescapeDataString(credentials[1])
+                : null;
+        }
+    });
+}
 
 builder.Services
     .AddAuthentication(options =>

@@ -1,8 +1,14 @@
+using FotoTime.Application.Common;
+using FotoTime.Application.Groups;
+using FotoTime.Application.Invitations;
+using Infrastructure.Groups;
 using Infrastructure.HealthChecks;
+using Infrastructure.Invitations;
 using Infrastructure.Persistence;
 using Infrastructure.Temporal;
 using Infrastructure.Temporal.Activities;
 using Infrastructure.Temporal.Workflows;
+using Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Extensions.DiagnosticSource;
@@ -28,6 +34,18 @@ public static class DependencyInjection
             });
         });
 
+        // Options
+        services.AddOptions<MailOptions>()
+            .BindConfiguration(MailOptions.SectionName);
+
+        // Core services
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IIdGenerator, GuidGenerator>();
+        services.AddSingleton<IInviteTokenGenerator, SecureInviteTokenGenerator>();
+        services.AddSingleton<IGroupRepository, InMemoryGroupRepository>();
+        services.AddSingleton<IInvitationWorkflowClient, InvitationWorkflowClient>();
+        services.AddTransient<IInviteEmailService, InviteEmailService>();
+
         // Register Temporal client and worker
         services
             .AddTemporalClient(temporalAddress, "default");
@@ -35,7 +53,9 @@ public static class DependencyInjection
         services
             .AddHostedTemporalWorker("default")
             .AddWorkflow<PingWorkflow>()
-            .AddScopedActivities<PingActivity>();
+            .AddWorkflow<InvitationWorkflow>()
+            .AddScopedActivities<PingActivity>()
+            .AddScopedActivities<InvitationActivities>();
 
         services.AddSingleton<ITemporalGateway, TemporalGateway>();
 

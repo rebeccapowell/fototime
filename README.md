@@ -207,7 +207,7 @@ You should see a `9.0.x` version number in the output.
 
 ### T06 — Invitations: Use Case + Email + Temporal Workflow
 
-**Status:** Todo
+**Status:** InProgress
 **Summary:** Allow group owner (parent) to invite users by email; expire after N days.
 **Details:**
 

@@ -127,6 +127,14 @@ public sealed class Group : Entity
         return AddMembership(membershipId, userId, MembershipRole.Member);
     }
 
+    public void ExpireInvite(Guid inviteId, DateTimeOffset expiredAt)
+    {
+        var invite = _invitesByToken.Values.FirstOrDefault(i => i.Id == inviteId)
+            ?? throw new InvalidOperationException("Invite does not exist.");
+
+        invite.Expire(expiredAt);
+    }
+
     public Challenge ProposeChallenge(Guid challengeId, string title, Slug slug)
     {
         if (_challenges.Values.Any(c => c.Slug.Equals(slug)))
