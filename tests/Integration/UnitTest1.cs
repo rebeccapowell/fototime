@@ -12,8 +12,7 @@ public class E2EIntegrationTest
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
-    [Fact]
-    [RequiresDocker]
+    [RequiresDockerFact]
     public async Task WebServiceReturnsSuccessfulResponse()
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
@@ -45,8 +44,7 @@ public class E2EIntegrationTest
         Assert.Equal("Healthy", payload!.Status);
     }
 
-    [Fact]
-    [RequiresDocker]
+    [RequiresDockerFact]
     public async Task DatabaseShouldBeHealthy()
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
@@ -72,8 +70,7 @@ public class E2EIntegrationTest
         Assert.Contains("healthy", content.ToLower());
     }
 
-    [Fact]
-    [RequiresDocker]
+    [RequiresDockerFact]
     public async Task TemporalPingEndpointReturnsTimestampPayload()
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
