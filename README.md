@@ -392,7 +392,9 @@ You should see a `9.0.x` version number in the output.
 
 * POST endpoints; anti-forgery; idempotent like (toggle).
 * HTMX swaps to update counts and comment list.
-  **Acceptance:** Like toggle/auth enforced; comments render; spam limits (min delay).
+* Enforce a 30-second cooldown between interactions per membership per photo; persist the most recent interaction timestamp in the Postgres-backed `PhotoInteractionThrottle` table (exposed via `src/Infrastructure/Persistence/PhotoInteractionThrottleRepository`).
+* When the throttle triggers, JSON APIs return **429 Too Many Requests** with body `{ "error": "Throttle window active" }`; HTMX partials also respond with 429 and render an inline error banner describing the active cooldown window.
+  **Acceptance:** Like toggle/auth enforced; comments render; spam limits verified via automated tests covering the throttle window persistence and UI behavior for the inline HTMX error state.
   **Depends:** T12, T04
 
 ---
