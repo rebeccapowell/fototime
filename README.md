@@ -331,8 +331,13 @@ You should see a `9.0.x` version number in the output.
 **Details:**
 
 * Config `PhotoLimits.MaxPerTopic` default 5.
-* Prevent uploads after end; show countdown.
-  **Acceptance:** Limits enforced; UX shows remaining slots.
+* Enforcement pipeline:
+  * Domain guard on the `WeeklyTopic` aggregate rejects submissions that would exceed the caller’s per-topic allotment or arrive outside the active `Period`.
+  * Web middleware on the upload endpoint performs a fast-fail check against a cached `RemainingPhotoSlots` projection so users receive immediate feedback before the request body streams.
+  * Background reconciliation job audits daily uploads to ensure storage invariants stay in sync with domain counts; mismatches trigger alerts.
+* Concurrency: application service wraps uploads in a transaction that locks the member/topic row, re-reads the latest submission count, and retries once on concurrency violations so parallel uploads can settle without exceeding limits.
+* Countdown renders via a shared HTMX partial (`src/Web/Shared/_TopicCountdown.cshtml`) backed by a lightweight view model (`TopicCountdownViewModel`) exposing server time, topic end timestamp, and remaining slot data from the same projection powering the middleware.
+  **Acceptance:** Automated tests cover domain guard + middleware enforcement, and UX review verifies the countdown component behavior and data binding.
   **Depends:** T05, T09
 
 ---
