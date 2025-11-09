@@ -1,5 +1,6 @@
 using Infrastructure;
 using Infrastructure.Temporal.Workflows;
+using Microsoft.Extensions.Hosting;
 using System.Diagnostics.Metrics;
 using Temporalio.Client;
 

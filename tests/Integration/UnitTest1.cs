@@ -37,8 +37,9 @@ public class E2EIntegrationTest
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        Assert.Contains("Healthy", content);
+        var payload = await response.Content.ReadFromJsonAsync<HealthCheckResponse>(cancellationToken: cancellationToken);
+        Assert.NotNull(payload);
+        Assert.Equal("Healthy", payload!.Status);
     }
 
     [Fact]
