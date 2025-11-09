@@ -68,6 +68,11 @@ public class PingEndpointTests
     {
         public FakeTemporalGateway Gateway { get; set; } = new(DateTime.UtcNow);
 
+        public TestWebApplicationFactory()
+        {
+            ClientOptions.BaseAddress = new Uri("https://localhost");
+        }
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureServices(services =>
