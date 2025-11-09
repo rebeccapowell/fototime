@@ -168,7 +168,7 @@ You should see a `9.0.x` version number in the output.
 
 ### T05 — Domain Modeling (Groups, Users, Profiles)
 
-**Status:** Todo
+**Status:** Done
 **Summary:** Create core entities, value objects, and invariants.
 **Details:**
 
