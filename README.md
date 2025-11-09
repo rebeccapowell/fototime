@@ -295,10 +295,17 @@ You should see a `9.0.x` version number in the output.
 **Summary:** Every Sunday evening start the vote; Monday start Topic of the Week.
 **Details:**
 
-* Temporal cron: Sun 18:00 Europe/Berlin → open voting for `WeeklyTopic` (from approved backlog).
-* Temporal starts topic at Mon 00:01; stores `Period` (start/end).
-* Configurable per group.
-  **Acceptance:** Dry-run Temporal shows scheduled events; DB state updates.
+* Scheduling configuration model stored per group:
+  * Persist a canonical IANA timezone identifier (e.g., `Europe/Berlin`).
+  * Persist the cron expression governing when voting opens (e.g., "Sun 18:00"), along with offsets for topic start/end windows (e.g., voting duration, topic open/close offsets in minutes).
+  * Represent the data via a strongly typed value object (`GroupScheduleConfig`) exposed from the domain. Persistence options include new nullable columns on `Group` (`ScheduleTimezone`, `VotingCron`, `VotingOffsetMinutes`, `TopicStartOffsetMinutes`, `TopicDurationMinutes`) or a dedicated configuration table keyed by `GroupId`; whichever approach we choose must allow Temporal workers to query a single row per group.
+* Store the configuration in the relational database via EF Core; infrastructure repositories map the value object to the chosen columns/table. Temporal worker startup loads all active group schedule configs into memory and watches for changes via periodic refresh (e.g., every few minutes) so per-group schedule updates flow through without restarts.
+* Temporal cron: evaluate each group’s config so voting opens per the persisted cron + offsets, defaulting to Sunday 18:00 group-local time when unset.
+* Temporal calculates topic periods using the group timezone, applying offsets for topic start (e.g., Monday 00:01 local) and duration. Persist the resulting `Period` on `WeeklyTopic` along with audit metadata tying back to the config snapshot used when scheduling.
+  **Acceptance:**
+  * Dry-run Temporal shows scheduled events; DB state updates.
+  * Daylight Saving Time transitions respect the configured timezone: jobs scheduled across DST boundaries fire at the correct local times without duplicates or gaps.
+  * Automated verification covers multiple groups with distinct schedules to prove that cron expressions, offsets, and timezone conversions are respected independently.
   **Depends:** T03, T05, T08
 
 ---
