@@ -6,8 +6,10 @@ using Temporalio.Workflows;
 
 namespace Infrastructure.Temporal.Workflows;
 
+[Workflow]
 public interface IInvitationWorkflow
 {
+    [WorkflowRun]
     public Task RunAsync(InvitationWorkflowRequest request);
 }
 
