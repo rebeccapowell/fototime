@@ -1,11 +1,10 @@
-using System.Diagnostics.Metrics;
 using Infrastructure.HealthChecks;
 using Infrastructure.Persistence;
+using Infrastructure.Temporal;
 using Infrastructure.Temporal.Activities;
 using Infrastructure.Temporal.Workflows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Temporalio.Client;
 using Temporalio.Extensions.DiagnosticSource;
 using Temporalio.Extensions.Hosting;
 using Temporalio.Extensions.OpenTelemetry;
@@ -37,6 +36,8 @@ public static class DependencyInjection
             .AddHostedTemporalWorker("default")
             .AddWorkflow<PingWorkflow>()
             .AddScopedActivities<PingActivity>();
+
+        services.AddSingleton<ITemporalGateway, TemporalGateway>();
 
         // Activities
         services.AddTransient<IPingActivity, PingActivity>();

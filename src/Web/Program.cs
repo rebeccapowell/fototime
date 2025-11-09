@@ -1,8 +1,7 @@
 using Infrastructure;
-using Infrastructure.Temporal.Workflows;
+using Infrastructure.Temporal;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics.Metrics;
-using Temporalio.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,17 +31,14 @@ builder.Services.AddInfrastructureServices(connectionString, temporalAddress);
 
 var app = builder.Build();
 
+app.MapDefaultEndpoints();
+
 // Temporal test endpoint
-app.MapGet("/ping", async (ITemporalClient client) =>
+app.MapGet("/ping", async (ITemporalGateway gateway, CancellationToken cancellationToken) =>
 {
     try
     {
-        var workflow = await client.StartWorkflowAsync(
-            (PingWorkflow wf) => wf.RunAsync(),
-            new() { TaskQueue = "default", Id = $"ping-{Guid.NewGuid()}" }
-        );
-
-        var timestamp = await workflow.GetResultAsync();
+        var timestamp = await gateway.RunPingWorkflowAsync(cancellationToken);
         return Results.Ok(new PingResponse(timestamp));
     }
     catch (Exception ex)
@@ -56,3 +52,5 @@ app.MapGet("/", () => "Hello World!");
 app.Run();
 
 internal sealed record PingResponse(DateTime Timestamp);
+
+public partial class Program;

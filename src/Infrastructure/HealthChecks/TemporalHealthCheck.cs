@@ -1,17 +1,17 @@
+using Infrastructure.Temporal;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Temporalio.Client;
 
 namespace Infrastructure.HealthChecks;
 
-public class TemporalHealthCheck : IHealthCheck
+public sealed class TemporalHealthCheck : IHealthCheck
 {
-    private readonly ITemporalClient _client;
+    private readonly ITemporalGateway _gateway;
     private readonly ILogger<TemporalHealthCheck> _logger;
 
-    public TemporalHealthCheck(ITemporalClient client, ILogger<TemporalHealthCheck> logger)
+    public TemporalHealthCheck(ITemporalGateway gateway, ILogger<TemporalHealthCheck> logger)
     {
-        _client = client;
+        _gateway = gateway;
         _logger = logger;
     }
 
@@ -19,8 +19,7 @@ public class TemporalHealthCheck : IHealthCheck
     {
         try
         {
-            // Call describe namespace API to verify service is up and accessible
-            var result = await _client.WorkflowService.DescribeNamespaceAsync(new() { Namespace = "default" }, new() { CancellationToken = cancellationToken });
+            await _gateway.EnsureNamespaceAsync(cancellationToken);
             return HealthCheckResult.Healthy();
         }
         catch (Exception ex)
@@ -29,4 +28,4 @@ public class TemporalHealthCheck : IHealthCheck
             return HealthCheckResult.Unhealthy(ex.Message);
         }
     }
-    }
+}

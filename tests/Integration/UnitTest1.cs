@@ -1,7 +1,10 @@
+extern alias AppHostAlias;
+
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Aspire.Hosting;
+using FotoTime.Tests.Utilities;
 
 namespace FotoTime.Integration.Tests;
 
@@ -15,7 +18,7 @@ public class E2EIntegrationTest
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
 
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHost.Program>(cancellationToken);
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
 
         builder.Services.AddLogging(logging =>
         {
@@ -48,7 +51,7 @@ public class E2EIntegrationTest
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
 
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHost.Program>(cancellationToken);
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
 
         builder.Services.AddLogging(logging =>
         {
@@ -75,7 +78,7 @@ public class E2EIntegrationTest
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
 
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHost.Program>(cancellationToken);
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
 
         builder.Services.AddLogging(logging =>
         {
@@ -98,7 +101,6 @@ public class E2EIntegrationTest
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
-        Assert.NotNull(payload);
         Assert.True(payload.TryGetProperty("timestamp", out var timestampProperty));
 
         var timestamp = timestampProperty.GetDateTimeOffset();
@@ -106,3 +108,5 @@ public class E2EIntegrationTest
         Assert.InRange(timestamp, now.AddMinutes(-5), now.AddMinutes(1));
     }
 }
+
+internal sealed record HealthCheckResponse(string Status);
