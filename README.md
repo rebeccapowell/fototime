@@ -155,7 +155,7 @@ You should see a `9.0.x` version number in the output.
 
 ### T04 — Auth: OIDC + Cookie + Anti-Forgery
 
-**Status:** Todo
+**Status:** Done
 **Summary:** Secure site with OIDC (demo provider), cookie auth, authorization policies.
 **Details:**
 

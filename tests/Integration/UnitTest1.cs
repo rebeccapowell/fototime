@@ -1,5 +1,6 @@
 extern alias AppHostAlias;
 
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -103,6 +104,59 @@ public class E2EIntegrationTest
         var timestamp = timestampProperty.GetDateTimeOffset();
         var now = DateTimeOffset.UtcNow;
         Assert.InRange(timestamp, now.AddMinutes(-5), now.AddMinutes(1));
+    }
+
+    [RequiresDockerFact]
+    public async Task AnonymousUserIsRedirectedToLogin()
+    {
+        var cancellationToken = TestContext.Current?.CancellationToken ?? default;
+
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
+
+        await using var app = await builder.BuildAsync(cancellationToken);
+        await app.StartAsync(cancellationToken);
+
+        var baseClient = app.CreateHttpClient("api");
+        Assert.NotNull(baseClient.BaseAddress);
+
+        using var handler = new HttpClientHandler
+        {
+            AllowAutoRedirect = false
+        };
+
+        using var unauthClient = new HttpClient(handler)
+        {
+            BaseAddress = baseClient.BaseAddress
+        };
+
+        var response = await unauthClient.GetAsync("/", cancellationToken);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        Assert.Contains("connect/authorize", response.Headers.Location!.OriginalString);
+    }
+
+    [RequiresDockerFact]
+    public async Task SecurityHeadersAreAddedToResponses()
+    {
+        var cancellationToken = TestContext.Current?.CancellationToken ?? default;
+
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
+
+        await using var app = await builder.BuildAsync(cancellationToken);
+        await app.StartAsync(cancellationToken);
+
+        var webClient = app.CreateHttpClient("api");
+
+        var response = await webClient.GetAsync("/ping", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        Assert.True(response.Headers.TryGetValues("Content-Security-Policy", out var cspValues));
+        Assert.Contains("default-src 'self'", cspValues);
+
+        Assert.True(response.Headers.Contains("X-Content-Type-Options"));
+        Assert.True(response.Headers.Contains("X-Frame-Options"));
+        Assert.True(response.Headers.Contains("Referrer-Policy"));
+        Assert.True(response.Headers.Contains("Permissions-Policy"));
     }
 }
 
