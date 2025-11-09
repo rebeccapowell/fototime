@@ -27,7 +27,7 @@ public class PingWorkflow : IPingWorkflow
             Options);
 
         Workflow.Logger.LogInformation("Ping workflow completed");
-        
-        return DateTime.Parse(result);
+
+        return result;
     }
 }
