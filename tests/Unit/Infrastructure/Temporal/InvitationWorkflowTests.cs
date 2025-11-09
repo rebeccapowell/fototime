@@ -1,4 +1,3 @@
-using System.Linq;
 using FotoTime.Application.Invitations;
 using Infrastructure.Temporal.Activities;
 using Infrastructure.Temporal.Workflows;
@@ -44,10 +43,9 @@ public class InvitationWorkflowTests
                 (IInvitationWorkflow wf) => wf.RunAsync(request),
                 new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
 
-            await WaitForTimerAsync(handle, TimeSpan.FromDays(2));
-
             await environment.DelayAsync(TimeSpan.FromDays(2));
             await WaitForConditionAsync(() => activities.Reminders.Count == 1);
+            Assert.Empty(activities.Expirations);
 
             var reminder = Assert.Single(activities.Reminders);
             Assert.Equal(request.InviteId, reminder.InviteId);
@@ -56,7 +54,6 @@ public class InvitationWorkflowTests
             Assert.Equal(request.IssuedAt, reminder.IssuedAt);
             Assert.Equal(request.Email, reminder.Email);
 
-            await WaitForTimerAsync(handle, TimeSpan.FromDays(1));
             await environment.DelayAsync(TimeSpan.FromDays(1));
             await WaitForConditionAsync(() => activities.Expirations.Count == 1);
 
@@ -100,8 +97,6 @@ public class InvitationWorkflowTests
             var handle = await environment.Client.StartWorkflowAsync(
                 (IInvitationWorkflow wf) => wf.RunAsync(request),
                 new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
-
-            await WaitForTimerAsync(handle, TimeSpan.FromHours(12));
 
             await environment.DelayAsync(TimeSpan.FromDays(2));
             await WaitForConditionAsync(() => activities.Expirations.Count == 1);
@@ -153,31 +148,6 @@ public class InvitationWorkflowTests
         }
 
         throw new TimeoutException("Timed out waiting for condition to be satisfied.");
-    }
-
-    private static async Task WaitForTimerAsync(
-        WorkflowHandle<IInvitationWorkflow> handle,
-        TimeSpan expectedTimeout,
-        TimeSpan? timeout = null,
-        TimeSpan? pollInterval = null)
-    {
-        var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(10);
-        var interval = pollInterval ?? TimeSpan.FromMilliseconds(100);
-        var deadline = DateTime.UtcNow + effectiveTimeout;
-
-        while (DateTime.UtcNow < deadline)
-        {
-            var history = await handle.FetchHistoryAsync().ConfigureAwait(false);
-
-            if (history.Events.Any(e => e.TimerStartedEventAttributes?.StartToFireTimeout.ToTimeSpan() == expectedTimeout))
-            {
-                return;
-            }
-
-            await Task.Delay(interval).ConfigureAwait(false);
-        }
-
-        throw new TimeoutException("Timed out waiting for workflow timer to start.");
     }
 
     private static TemporalWorker CreateWorker(
