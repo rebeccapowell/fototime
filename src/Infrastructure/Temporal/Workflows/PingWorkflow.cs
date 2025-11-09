@@ -2,32 +2,35 @@ using Infrastructure.Temporal.Activities;
 using Microsoft.Extensions.Logging;
 using Temporalio.Workflows;
 
-namespace Infrastructure.Temporal.Workflows;
-
-[Workflow]
-public interface IPingWorkflow
+#pragma warning disable IDE0040
+namespace Infrastructure.Temporal.Workflows
 {
-    [WorkflowRun]
-    Task<DateTime> RunAsync();
-}
-
-public class PingWorkflow : IPingWorkflow
-{
-    private static readonly ActivityOptions Options = new()
+    public interface IPingWorkflow
     {
-        StartToCloseTimeout = TimeSpan.FromMinutes(5)
-    };
+        Task<DateTime> RunAsync();
+    }
 
-    public async Task<DateTime> RunAsync()
+    [Workflow]
+    public class PingWorkflow : IPingWorkflow
     {
-        Workflow.Logger.LogInformation("Starting ping workflow");
-        
-        var result = await Workflow.ExecuteActivityAsync(
-            (IPingActivity act) => act.PingAsync(),
-            Options);
+        private static readonly ActivityOptions Options = new()
+        {
+            StartToCloseTimeout = TimeSpan.FromMinutes(5)
+        };
 
-        Workflow.Logger.LogInformation("Ping workflow completed");
+        [WorkflowRun]
+        public async Task<DateTime> RunAsync()
+        {
+            Workflow.Logger.LogInformation("Starting ping workflow");
 
-        return result;
+            var result = await Workflow.ExecuteActivityAsync(
+                (IPingActivity act) => act.PingAsync(),
+                Options);
+
+            Workflow.Logger.LogInformation("Ping workflow completed");
+
+            return result;
+        }
     }
 }
+#pragma warning restore IDE0040

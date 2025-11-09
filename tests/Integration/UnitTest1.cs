@@ -1,7 +1,10 @@
+extern alias AppHostAlias;
+
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Aspire.Hosting;
+using FotoTime.Tests.Utilities;
 
 namespace FotoTime.Integration.Tests;
 
@@ -9,13 +12,12 @@ public class E2EIntegrationTest
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
-    [Fact]
-    [RequiresDocker]
+    [RequiresDockerFact]
     public async Task WebServiceReturnsSuccessfulResponse()
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
 
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHost.Program>(cancellationToken);
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
 
         builder.Services.AddLogging(logging =>
         {
@@ -32,7 +34,7 @@ public class E2EIntegrationTest
         await using var app = await builder.BuildAsync(cancellationToken);
         await app.StartAsync(cancellationToken);
 
-        var webClient = app.CreateHttpClient("web");
+        var webClient = app.CreateHttpClient("api");
 
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -42,13 +44,12 @@ public class E2EIntegrationTest
         Assert.Equal("Healthy", payload!.Status);
     }
 
-    [Fact]
-    [RequiresDocker]
+    [RequiresDockerFact]
     public async Task DatabaseShouldBeHealthy()
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
 
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHost.Program>(cancellationToken);
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
 
         builder.Services.AddLogging(logging =>
         {
@@ -60,7 +61,7 @@ public class E2EIntegrationTest
         await using var app = await builder.BuildAsync(cancellationToken);
         await app.StartAsync(cancellationToken);
 
-        var webClient = app.CreateHttpClient("web");
+        var webClient = app.CreateHttpClient("api");
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
 
@@ -69,13 +70,12 @@ public class E2EIntegrationTest
         Assert.Contains("healthy", content.ToLower());
     }
 
-    [Fact]
-    [RequiresDocker]
+    [RequiresDockerFact]
     public async Task TemporalPingEndpointReturnsTimestampPayload()
     {
         var cancellationToken = TestContext.Current?.CancellationToken ?? default;
 
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHost.Program>(cancellationToken);
+        var builder = await DistributedApplicationTestingBuilder.CreateAsync<AppHostAlias::Program>(cancellationToken);
 
         builder.Services.AddLogging(logging =>
         {
@@ -92,13 +92,12 @@ public class E2EIntegrationTest
         await using var app = await builder.BuildAsync(cancellationToken);
         await app.StartAsync(cancellationToken);
 
-        var webClient = app.CreateHttpClient("web");
+        var webClient = app.CreateHttpClient("api");
 
         var response = await webClient.GetAsync("/ping", cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
-        Assert.NotNull(payload);
         Assert.True(payload.TryGetProperty("timestamp", out var timestampProperty));
 
         var timestamp = timestampProperty.GetDateTimeOffset();
@@ -106,3 +105,5 @@ public class E2EIntegrationTest
         Assert.InRange(timestamp, now.AddMinutes(-5), now.AddMinutes(1));
     }
 }
+
+internal sealed record HealthCheckResponse(string Status);
