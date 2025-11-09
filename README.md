@@ -368,7 +368,7 @@ You should see a `9.0.x` version number in the output.
 **Details:**
 
 * Add traces for command handlers; app metrics (requests/sec, queue length).
-* `/health` (dependency health) and `/alive` (liveness ping).
+* `/health` (JSON response with dependency health, including Postgres and Temporal checks) and `/alive` (liveness ping).
   **Acceptance:** Traces visible; Postgres + Temporal dependency checks green.
   **Depends:** T01–T03
 

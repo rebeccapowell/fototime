@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using System.Text.Json.Serialization;
 using Aspire.Hosting;
 
 namespace FotoTime.Integration.Tests;
@@ -36,8 +38,9 @@ public class E2EIntegrationTest
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        Assert.Contains("Healthy", content);
+        var payload = await response.Content.ReadFromJsonAsync<HealthCheckResponse>(cancellationToken: cancellationToken);
+        Assert.NotNull(payload);
+        Assert.Equal("Healthy", payload!.Status);
     }
 
     [Fact]
@@ -62,10 +65,25 @@ public class E2EIntegrationTest
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        var normalized = content.ToLowerInvariant();
-        Assert.Contains("postgres", normalized);
-        Assert.Contains("temporal", normalized);
-        Assert.Contains("healthy", normalized);
+        var payload = await response.Content.ReadFromJsonAsync<HealthCheckResponse>(cancellationToken: cancellationToken);
+        Assert.NotNull(payload);
+
+        Assert.Equal("Healthy", payload!.Status);
+        Assert.True(payload.Results.TryGetValue("postgres", out var postgres), "Expected postgres entry in health response.");
+        Assert.Equal("Healthy", postgres.Status);
+
+        Assert.True(payload.Results.TryGetValue("temporal", out var temporal), "Expected temporal entry in health response.");
+        Assert.Equal("Healthy", temporal.Status);
     }
+
+    private sealed record HealthCheckResponse(
+        [property: JsonPropertyName("status")] string Status,
+        [property: JsonPropertyName("results")] Dictionary<string, HealthCheckEntry> Results);
+
+    private sealed record HealthCheckEntry(
+        [property: JsonPropertyName("status")] string Status,
+        [property: JsonPropertyName("description")] string? Description,
+        [property: JsonPropertyName("duration")] string Duration,
+        [property: JsonPropertyName("exception")] string? Exception,
+        [property: JsonPropertyName("data")] Dictionary<string, string?> Data);
 }
