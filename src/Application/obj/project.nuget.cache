@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "FLVIpA3DVPM=",
+  "success": true,
+  "projectFilePath": "/workspaces/fototime/src/Application/Application.csproj",
+  "expectedPackageFiles": [
+    "/home/codespace/.nuget/packages/microsoft.codeanalysis.netanalyzers/9.0.0/microsoft.codeanalysis.netanalyzers.9.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

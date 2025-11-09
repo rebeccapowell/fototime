@@ -6,6 +6,35 @@ It’s structured for small, testable steps, with strict coding standards and cl
 
 # TeamTunes (Working Title) — Delivery Plan
 
+## Development Standards
+
+⚠️ **IMPORTANT: Zero-Warning Policy** ⚠️
+
+This project maintains strict quality standards:
+1. **Build Quality:**
+   - All builds MUST have zero warnings
+   - Latest .NET analyzers must be enabled
+   - No suppressed or disabled warnings allowed
+   - All new code must compile without warnings
+
+2. **Testing Standards:**
+   - All tests MUST pass with zero warnings
+   - New features require test coverage
+   - Test warnings are treated as failures
+   - Integration tests must be included for DB/API changes
+
+3. **Code Analysis:**
+   - Latest .NET analyzers enabled
+   - All analyzer rules enforced
+   - IDE0011 (braces) and similar style rules enforced
+   - No pragma warning disables without team review
+
+4. **Review Process:**
+   - PR builds must be warning-free
+   - Test coverage must be maintained
+   - Style/analyzer compliance required
+   - No merging with pending warnings
+
 ## Guiding Principles
 
 * **Security first:** OAuth2/OIDC auth, least privilege, output encoding, input validation, secure headers, CSRF/anti-forgery for unsafe verbs.
@@ -15,7 +44,7 @@ It’s structured for small, testable steps, with strict coding standards and cl
 * **UX:** Server-rendered Razor + **HTMX** for interactivity; **shadcn/ui** for styling; responsive, accessible; infinite scroll UX for photos.
 * **Workflows/Scheduling:** **Temporal** for invites, weekly topic/voting windows, reminders, results computation.
 * **DB:** PostgreSQL via EF Core (code-first, migrations). Row-level scoping by GroupId.
-* **Coding standards:** .editorconfig, analyzers (treat warnings as errors), nullable enabled, async all I/O, guard clauses, unit tests (xUnit), minimal coupling, SOLID.
+* **Code Quality:** .editorconfig, latest analyzers enabled, nullable required, async all I/O, guard clauses, comprehensive tests, SOLID principles.
 
 ## Repository Layout (target)
 
@@ -47,15 +76,24 @@ It’s structured for small, testable steps, with strict coding standards and cl
 
 * New solution with projects and references matching structure above.
 * Add Aspire manifest to run Web, Postgres, Temporal (dev server), Mailpit.
-* Add .editorconfig, Directory.Build.props (nullable, warnings as errors), analyzers.
-  **Acceptance:** `dotnet build` succeeds; `AppHost` runs all services; README dev-run instructions.
+* Add .editorconfig, Directory.Build.props (nullable, strict analyzers), clear warnings policy.
+  **Acceptance:**
+  - `dotnet build` succeeds with zero warnings
+  - All tests pass with zero warnings
+  - Code analysis is clean (no disabled rules)
+  - `AppHost` runs all services
+  - README contains clear dev-run instructions
+  **Quality Gates:**
+  - ✅ No warnings policy: All builds must have zero warnings
+  - ✅ Test coverage: All new code must have tests
+  - ✅ Code analysis: Latest .NET analyzers enabled and warnings treated as errors
   **Depends:** —
 
 ---
 
 ### T02 — Infrastructure: Postgres + EF Core + Migrations
 
-**Status:** Todo
+**Status:** Done
 **Summary:** Configure EF Core, DbContext, migrations, Postgres connection from Aspire.
 **Details:**
 

@@ -1,13 +1,16 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+var builder = DistributedApplication.CreateBuilder(args);
 
-var builder = Host.CreateDefaultBuilder(args);
+var postgres = builder.AddPostgres("postgres")
+    .WithVolume("pgdata", "/var/lib/postgresql/data");
 
-// Add services to the container
-builder.ConfigureServices((context, services) =>
-{
-    // Add application services here
-});
+var fototimeDb = postgres.AddDatabase("fototime");
 
-var host = builder.Build();
-await host.RunAsync();
+var migrations = builder.AddProject<Projects.Migrator>("migrations")
+    .WithReference(fototimeDb)
+    .WaitFor(fototimeDb);
+
+var api = builder.AddProject<Projects.Web>("api")
+    .WithReference(fototimeDb)
+    .WaitForCompletion(migrations);
+
+await builder.Build().RunAsync();
