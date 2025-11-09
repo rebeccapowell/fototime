@@ -35,7 +35,7 @@ public class E2EIntegrationTest
         await using var app = await builder.BuildAsync(cancellationToken);
         await app.StartAsync(cancellationToken);
 
-        var webClient = app.CreateHttpClient("web");
+        var webClient = app.CreateHttpClient("api");
 
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -63,7 +63,7 @@ public class E2EIntegrationTest
         await using var app = await builder.BuildAsync(cancellationToken);
         await app.StartAsync(cancellationToken);
 
-        var webClient = app.CreateHttpClient("web");
+        var webClient = app.CreateHttpClient("api");
         var response = await webClient.GetAsync("/health", cancellationToken);
         response.EnsureSuccessStatusCode();
 
@@ -95,7 +95,7 @@ public class E2EIntegrationTest
         await using var app = await builder.BuildAsync(cancellationToken);
         await app.StartAsync(cancellationToken);
 
-        var webClient = app.CreateHttpClient("web");
+        var webClient = app.CreateHttpClient("api");
 
         var response = await webClient.GetAsync("/ping", cancellationToken);
         response.EnsureSuccessStatusCode();

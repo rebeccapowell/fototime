@@ -43,7 +43,7 @@ jobs:
       - name: Test
         run: |
           dotnet test --no-build \
-            --logger "trx;LogFileName=$(AssemblyName)-results.trx" \
+            --logger "trx;LogFileName=\$(AssemblyName)-results.trx" \
             --results-directory ./TestResults \
             --collect:"XPlat Code Coverage"
 
