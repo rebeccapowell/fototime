@@ -141,9 +141,14 @@ You should see a `9.0.x` version number in the output.
 **Summary:** Add Temporal client/worker hosting; health check.
 **Details:**
 
-* Add `ITemporalClient` and Worker in Infrastructure; register with Aspire.
-* Add sample “ping” workflow/activity for smoke test.
-  **Acceptance:** Temporal Worker starts; sample workflow runs via test endpoint.
+* Wire the Temporal development container into the AppHost manifest and service graph.
+* Register Temporal infrastructure (client, worker, health check) within the Infrastructure project.
+* Expose a `/ping` smoke endpoint that exercises a sample Temporal workflow/activity.
+* Add automated checks covering the Temporal worker startup and smoke endpoint behavior.
+  **Acceptance:**
+  - Temporal worker starts cleanly through Aspire with the Temporal container wired in.
+  - `/ping` endpoint responds successfully and is validated by an automated test invoking the workflow.
+  - `/health` endpoint reports the Temporal health check as healthy, with tests verifying the response shape/status.
   **Depends:** T01
 
 ---
