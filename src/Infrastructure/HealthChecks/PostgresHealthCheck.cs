@@ -1,5 +1,5 @@
+using System;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace Infrastructure.HealthChecks;

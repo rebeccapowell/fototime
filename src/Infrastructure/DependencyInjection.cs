@@ -43,7 +43,7 @@ public static class DependencyInjection
 
         // Health Checks
         services.AddHealthChecks()
-            .AddCheck<PostgresHealthCheck>("postgres", tags: new[] { "database" })
+            .AddCheck("postgres", new PostgresHealthCheck(connectionString), tags: new[] { "database" })
             .AddCheck<TemporalHealthCheck>("temporal", tags: new[] { "temporal" })
             .AddDbContextCheck<AppDbContext>("ef");
 
