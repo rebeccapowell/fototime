@@ -46,6 +46,35 @@ This project maintains strict quality standards:
 * **DB:** PostgreSQL via EF Core (code-first, migrations). Row-level scoping by GroupId.
 * **Code Quality:** .editorconfig, latest analyzers enabled, nullable required, async all I/O, guard clauses, comprehensive tests, SOLID principles.
 
+## Installing the .NET 9 SDK
+
+Install the .NET 9 SDK by running the official install script for your platform:
+
+* **macOS/Linux**
+
+  ```bash
+  curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0
+  ```
+
+  The script installs into `~/.dotnet` by default. Add `~/.dotnet` and `~/.dotnet/tools` to your `PATH` (for example by updating `~/.bashrc` or `~/.zshrc`) so that `dotnet --info` resolves the new SDK.
+
+* **Windows (PowerShell)**
+
+  ```powershell
+  irm https://dot.net/v1/dotnet-install.ps1 | iex
+  dotnet-install --channel 9.0
+  ```
+
+  The script installs into `%USERPROFILE%\.dotnet` unless you pass a custom `-InstallDir`. Ensure `%USERPROFILE%\.dotnet` and `%USERPROFILE%\.dotnet\tools` are on your `PATH` before launching a new shell.
+
+After installation, verify the SDK is available with:
+
+```bash
+dotnet --version
+```
+
+You should see a `9.0.x` version number in the output.
+
 ## Repository Layout (target)
 
 ```
@@ -100,6 +129,7 @@ This project maintains strict quality standards:
 * Add `AppDbContext`, design-time factory, migration bundle.
 * Configure Npgsql mappings (DateTime UTC), snake_case.
 * Health check for DB.
+* Initial migration bundle created; migrator consumes `ConnectionStrings__fototime` from Aspire.
   **Acceptance:** Migration applies on startup; healthcheck green.
   **Depends:** T01
 
