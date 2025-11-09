@@ -41,7 +41,7 @@ It’s structured for small, testable steps, with strict coding standards and cl
 
 ### T01 — Bootstrap Aspire Solution (.NET 9)
 
-**Status:** Todo
+**Status:** Done
 **Summary:** Create Aspire solution with projects per repo layout and wiring.
 **Details:**
 
