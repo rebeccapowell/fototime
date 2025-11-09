@@ -254,12 +254,24 @@ You should see a `9.0.x` version number in the output.
 ### T07 — Profiles: Create/Edit + Safety Controls
 
 **Status:** Todo
-**Summary:** Simple profile (display name, avatar with moderation hint, bio limited).
+**Summary:** Full profile editor covering identity fields, safety preferences, and granular privacy toggles.
 **Details:**
 
-* Server-side validation; file size/type checks; store avatars in disk (dev) with hash filename.
-* Option for private profile fields (not shown to others).
-  **Acceptance:** Create/edit profile works; validation and error UX via HTMX.
+* Profile fields and visibility defaults:
+  * **Display name** — required, always public (cannot be hidden).
+  * **Avatar image** — optional upload, defaults to public but can be marked private to show a placeholder to non-owners.
+  * **Bio** — optional text, defaults to public but can be hidden from other members.
+  * **Preferred content safety tag** — defaults to `Safe`, always public so other members and moderators understand the member's safety expectations.
+  * **Email notifications opt-in** — defaults to enabled, always private to the member and stored as a preference only.
+  * **Hide from search** — defaults to false; when enabled the profile is excluded from directory/search results even if other fields are public.
+* Persist privacy selections on the `Profile` aggregate (e.g., `IsAvatarPrivate`, `IsBioPrivate`) and mirror them in projections/view models so query handlers can filter hidden data; reuse `HideProfileFromSearch` for directory privacy.
+* Store avatars on disk in development with hashed filenames; record moderation hints/content safety metadata alongside privacy flags so downstream pipelines respect both.
+* When serving profiles to other users, omit private field values and replace them with neutral placeholders or badges indicating the member chose to hide the information; only the owner sees full data in edit and view screens.
+* Server-side validation still enforces file size/type checks, bio length, and safety tag transition rules even when fields are private.
+  **Acceptance:**
+  * Server rejects invalid uploads or safety tag transitions and persists privacy flags atomically with profile updates.
+  * Queries/view models never expose private avatar/bio values to non-owners and hide-from-search members stay invisible in listing endpoints.
+  * HTMX forms show inline validation errors, dynamically reveal/hide preview snippets when privacy toggles change, and re-render the public profile fragment so the user can confirm how others will see it.
   **Depends:** T04, T05
 
 ---
