@@ -1,3 +1,4 @@
+using CommunityToolkit.Aspire.Hosting.MailPit;
 using InfinityFlow.Aspire.Temporal;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -13,6 +14,9 @@ public partial class Program
 
         var fototimeDb = postgres.AddDatabase("fototime");
 
+        var mailpit = builder.AddMailPit("mailpit")
+            .WithDataVolume("mailpit-data");
+
         var temporal = builder.AddTemporalServerContainer("temporal", b => b
             .WithPort(7233)
             .WithHttpPort(7234)
@@ -27,6 +31,7 @@ public partial class Program
         var api = builder.AddProject<Projects.Web>("api")
             .WithReference(fototimeDb)
             .WithReference(temporal)
+            .WithReference(mailpit)
             .WaitForCompletion(migrations);
 
         return builder.Build();
