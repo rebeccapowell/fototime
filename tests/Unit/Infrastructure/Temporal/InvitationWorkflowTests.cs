@@ -2,7 +2,6 @@ using FotoTime.Application.Invitations;
 using Infrastructure.Temporal.Activities;
 using Infrastructure.Temporal.Workflows;
 using Temporalio.Activities;
-using Temporalio.Client;
 using Temporalio.Testing;
 using Temporalio.Worker;
 using Xunit;
@@ -21,50 +20,47 @@ public class InvitationWorkflowTests
         }
 
         await using var environmentLifetime = environment;
+        var cancellationToken = TestContext.Current?.CancellationToken ?? CancellationToken.None;
         var activities = new RecordingInvitationActivities();
         var taskQueue = $"invitation-workflow-tests-{Guid.NewGuid():N}";
         var options = CreateWorkerOptions(activities, taskQueue);
 
-        using var worker = new TemporalWorker(environment.Client, options);
-        var cancellationToken = TestContext.Current?.CancellationToken ?? CancellationToken.None;
+        await using var worker = await environment.StartWorkerAsync(options, cancellationToken);
 
-        await worker.ExecuteAsync(async () =>
-        {
-            var issuedAt = await environment.GetCurrentTimeAsync();
-            var request = new InvitationWorkflowRequest(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                "token-123",
-                "child@example.com",
-                issuedAt,
-                issuedAt.AddDays(3));
+        var issuedAt = await environment.GetCurrentTimeAsync();
+        var request = new InvitationWorkflowRequest(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "token-123",
+            "child@example.com",
+            issuedAt,
+            issuedAt.AddDays(3));
 
-            var handle = await environment.Client.StartWorkflowAsync(
-                (IInvitationWorkflow wf) => wf.RunAsync(request),
-                new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
+        var handle = await environment.Client.StartWorkflowAsync(
+            (IInvitationWorkflow wf) => wf.RunAsync(request),
+            new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
 
-            var reminderAt = request.ExpiresAt - TimeSpan.FromDays(1);
+        var reminderAt = request.ExpiresAt - TimeSpan.FromDays(1);
 
-            await environment.DelayAsync(reminderAt - issuedAt + TimeSpan.FromSeconds(1));
+        await environment.DelayAsync(reminderAt - issuedAt + TimeSpan.FromSeconds(1), cancellationToken);
 
-            var reminder = Assert.Single(activities.Reminders);
-            Assert.Equal(request.InviteId, reminder.InviteId);
-            Assert.Equal(request.Token, reminder.Token);
-            Assert.Equal(request.ExpiresAt, reminder.ExpiresAt);
-            Assert.Equal(request.IssuedAt, reminder.IssuedAt);
-            Assert.Equal(request.Email, reminder.Email);
+        var reminder = Assert.Single(activities.Reminders);
+        Assert.Equal(request.InviteId, reminder.InviteId);
+        Assert.Equal(request.Token, reminder.Token);
+        Assert.Equal(request.ExpiresAt, reminder.ExpiresAt);
+        Assert.Equal(request.IssuedAt, reminder.IssuedAt);
+        Assert.Equal(request.Email, reminder.Email);
 
-            Assert.Empty(activities.Expirations);
+        Assert.Empty(activities.Expirations);
 
-            await environment.DelayAsync(request.ExpiresAt - reminderAt + TimeSpan.FromSeconds(1));
+        await environment.DelayAsync(request.ExpiresAt - reminderAt + TimeSpan.FromSeconds(1), cancellationToken);
 
-            var expiration = Assert.Single(activities.Expirations);
-            Assert.Equal(request.GroupId, expiration.GroupId);
-            Assert.Equal(request.InviteId, expiration.InviteId);
-            Assert.Equal(request.ExpiresAt, expiration.ExpiredAt);
+        var expiration = Assert.Single(activities.Expirations);
+        Assert.Equal(request.GroupId, expiration.GroupId);
+        Assert.Equal(request.InviteId, expiration.InviteId);
+        Assert.Equal(request.ExpiresAt, expiration.ExpiredAt);
 
-            await handle.GetResultAsync();
-        }, cancellationToken);
+        await handle.GetResultAsync();
     }
 
     [Fact]
@@ -77,38 +73,35 @@ public class InvitationWorkflowTests
         }
 
         await using var environmentLifetime = environment;
+        var cancellationToken = TestContext.Current?.CancellationToken ?? CancellationToken.None;
         var activities = new RecordingInvitationActivities();
         var taskQueue = $"invitation-workflow-tests-{Guid.NewGuid():N}";
         var options = CreateWorkerOptions(activities, taskQueue);
 
-        using var worker = new TemporalWorker(environment.Client, options);
-        var cancellationToken = TestContext.Current?.CancellationToken ?? CancellationToken.None;
+        await using var worker = await environment.StartWorkerAsync(options, cancellationToken);
 
-        await worker.ExecuteAsync(async () =>
-        {
-            var issuedAt = await environment.GetCurrentTimeAsync();
-            var request = new InvitationWorkflowRequest(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                "token-456",
-                "friend@example.com",
-                issuedAt,
-                issuedAt.AddHours(12));
+        var issuedAt = await environment.GetCurrentTimeAsync();
+        var request = new InvitationWorkflowRequest(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "token-456",
+            "friend@example.com",
+            issuedAt,
+            issuedAt.AddHours(12));
 
-            var handle = await environment.Client.StartWorkflowAsync(
-                (IInvitationWorkflow wf) => wf.RunAsync(request),
-                new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
+        var handle = await environment.Client.StartWorkflowAsync(
+            (IInvitationWorkflow wf) => wf.RunAsync(request),
+            new(id: $"wf-{Guid.NewGuid():N}", taskQueue: taskQueue));
 
-            await environment.DelayAsync(request.ExpiresAt - issuedAt + TimeSpan.FromSeconds(1));
+        await environment.DelayAsync(request.ExpiresAt - issuedAt + TimeSpan.FromSeconds(1), cancellationToken);
 
-            Assert.Empty(activities.Reminders);
+        Assert.Empty(activities.Reminders);
 
-            var expiration = Assert.Single(activities.Expirations);
-            Assert.Equal(request.InviteId, expiration.InviteId);
-            Assert.Equal(request.ExpiresAt, expiration.ExpiredAt);
+        var expiration = Assert.Single(activities.Expirations);
+        Assert.Equal(request.InviteId, expiration.InviteId);
+        Assert.Equal(request.ExpiresAt, expiration.ExpiredAt);
 
-            await handle.GetResultAsync();
-        }, cancellationToken);
+        await handle.GetResultAsync();
     }
 
     private sealed class RecordingInvitationActivities : IInvitationActivities
